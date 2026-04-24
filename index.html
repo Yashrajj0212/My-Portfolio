@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Yash Kumar — Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#03010a;
+    --accent:#7b2fff;
+    --glow:#a259ff;
+    --cyan:#00f5ff;
+    --text:#e8e0ff;
+    --dim:#6e6a8a;
+    --card:#0d0820;
+    --border:#2a1d4e;
+  }
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Space Mono',monospace;
+    overflow-x:hidden;
+    cursor:none;
+  }
+
+  /* CUSTOM CURSOR */
+  #cursor{
+    position:fixed;width:12px;height:12px;
+    background:var(--glow);border-radius:50%;
+    pointer-events:none;z-index:9999;
+    transition:transform .12s ease,opacity .2s;
+    mix-blend-mode:screen;
+    box-shadow:0 0 18px 4px var(--glow);
+  }
+  #cursor-ring{
+    position:fixed;width:38px;height:38px;
+    border:1.5px solid var(--glow);border-radius:50%;
+    pointer-events:none;z-index:9998;
+    transition:transform .32s cubic-bezier(.23,1,.32,1),opacity .2s,width .2s,height .2s;
+    opacity:.5;
+  }
+  body:has(a:hover) #cursor,body:has(button:hover) #cursor{transform:scale(2.5)}
+  body:has(a:hover) #cursor-ring,body:has(button:hover) #cursor-ring{width:56px;height:56px;opacity:.9}
+
+  /* CANVAS */
+  #bg-canvas{
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    z-index:0;pointer-events:none;
+  }
+
+  /* LOADING SCREEN */
+  #loader{
+    position:fixed;inset:0;background:var(--bg);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    z-index:1000;transition:opacity .8s ease,visibility .8s;
+  }
+  #loader.hidden{opacity:0;visibility:hidden}
+  .loader-text{
+    font-family:'Syne',sans-serif;font-weight:800;
+    font-size:clamp(1.4rem,4vw,2.2rem);
+    letter-spacing:.25em;color:var(--glow);
+    text-transform:uppercase;
+    animation:pulse 1.5s ease-in-out infinite;
+  }
+  .loader-bar{
+    width:220px;height:2px;background:var(--border);
+    margin-top:24px;border-radius:2px;overflow:hidden;
+  }
+  .loader-fill{
+    height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--cyan));
+    border-radius:2px;animation:load 2.2s ease forwards;
+  }
+  @keyframes load{to{width:100%}}
+  @keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+
+  /* LAYOUT */
+  .wrapper{position:relative;z-index:2}
+
+  /* NAV */
+  nav{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    padding:24px 48px;
+    display:flex;justify-content:space-between;align-items:center;
+    background:linear-gradient(to bottom,rgba(3,1,10,.9),transparent);
+    backdrop-filter:blur(2px);
+  }
+  .nav-logo{
+    font-family:'Syne',sans-serif;font-weight:800;
+    font-size:1.1rem;letter-spacing:.12em;
+    color:var(--glow);text-transform:uppercase;
+    text-decoration:none;
+  }
+  .nav-links{display:flex;gap:36px}
+  .nav-links a{
+    font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--dim);text-decoration:none;
+    transition:color .25s;position:relative;
+  }
+  .nav-links a::after{
+    content:'';position:absolute;bottom:-4px;left:0;right:0;
+    height:1px;background:var(--cyan);
+    transform:scaleX(0);transform-origin:left;transition:transform .3s;
+  }
+  .nav-links a:hover{color:var(--cyan)}
+  .nav-links a:hover::after{transform:scaleX(1)}
+
+  /* HERO */
+  #hero{
+    min-height:100vh;display:flex;flex-direction:column;
+    justify-content:center;padding:0 clamp(24px,8vw,120px);
+    position:relative;
+  }
+  .hero-tag{
+    font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;
+    color:var(--cyan);margin-bottom:20px;
+    opacity:0;animation:fadeUp .7s .3s forwards;
+  }
+  .hero-name{
+    font-family:'Syne',sans-serif;font-weight:800;
+    font-size:clamp(3.5rem,10vw,9rem);
+    line-height:.95;letter-spacing:-.02em;
+    opacity:0;animation:fadeUp .8s .5s forwards;
+  }
+  .hero-name span{
+    display:block;
+    background:linear-gradient(135deg,var(--text) 0%,var(--glow) 50%,var(--cyan) 100%);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  }
+  .hero-roles{
+    margin-top:28px;font-size:clamp(.85rem,2vw,1rem);
+    color:var(--dim);letter-spacing:.08em;
+    opacity:0;animation:fadeUp .8s .75s forwards;
+  }
+  .hero-roles em{color:var(--glow);font-style:normal}
+  .hero-cta{
+    margin-top:48px;display:flex;gap:20px;flex-wrap:wrap;
+    opacity:0;animation:fadeUp .8s 1s forwards;
+  }
+  .btn{
+    padding:14px 32px;border-radius:3px;font-family:'Space Mono',monospace;
+    font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;
+    text-decoration:none;cursor:none;
+    transition:all .25s;
+  }
+  .btn-primary{
+    background:var(--accent);color:#fff;
+    box-shadow:0 0 28px rgba(123,47,255,.4);
+  }
+  .btn-primary:hover{background:var(--glow);box-shadow:0 0 42px rgba(162,89,255,.7);transform:translateY(-2px)}
+  .btn-outline{
+    border:1px solid var(--border);color:var(--dim);
+    background:transparent;
+  }
+  .btn-outline:hover{border-color:var(--cyan);color:var(--cyan);transform:translateY(-2px)}
+
+  .scroll-hint{
+    position:absolute;bottom:48px;left:50%;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+    color:var(--dim);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
+    opacity:0;animation:fadeUp .8s 1.4s forwards;
+  }
+  .scroll-line{
+    width:1px;height:50px;background:linear-gradient(to bottom,var(--dim),transparent);
+    animation:scrollDown 1.8s ease-in-out infinite;
+  }
+  @keyframes scrollDown{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+
+  /* SECTIONS */
+  section{padding:clamp(80px,14vw,160px) clamp(24px,8vw,120px)}
+  .section-label{
+    font-size:.7rem;letter-spacing:.35em;text-transform:uppercase;
+    color:var(--cyan);margin-bottom:16px;
+  }
+  .section-title{
+    font-family:'Syne',sans-serif;font-weight:800;
+    font-size:clamp(2rem,5vw,3.5rem);line-height:1.1;
+    margin-bottom:60px;
+  }
+  .section-title .dim{color:var(--dim)}
+
+  /* ABOUT */
+  #about .grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;
+  }
+  @media(max-width:768px){#about .grid{grid-template-columns:1fr;gap:48px}}
+  .about-bio{font-size:.95rem;line-height:1.9;color:var(--dim)}
+  .about-bio p{margin-bottom:18px}
+  .about-bio strong{color:var(--text)}
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .stat-card{
+    background:var(--card);border:1px solid var(--border);
+    padding:28px;border-radius:6px;
+    transition:border-color .25s,transform .25s;
+  }
+  .stat-card:hover{border-color:var(--glow);transform:translateY(-4px)}
+  .stat-num{
+    font-family:'Syne',sans-serif;font-weight:800;
+    font-size:2.4rem;
+    background:linear-gradient(135deg,var(--glow),var(--cyan));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  }
+  .stat-label{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-top:8px}
+
+  /* SKILLS */
+  #skills .skills-list{
+    display:flex;flex-wrap:wrap;gap:14px;
+  }
+  .skill-pill{
+    padding:10px 22px;border:1px solid var(--border);border-radius:2px;
+    font-size:.78rem;letter-spacing:.1em;
+    color:var(--dim);transition:all .25s;
+    position:relative;overflow:hidden;
+  }
+  .skill-pill::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,var(--accent),var(--cyan));
+    opacity:0;transition:opacity .25s;
+  }
+  .skill-pill:hover{color:#fff;border-color:transparent;transform:translateY(-3px)}
+  .skill-pill:hover::before{opacity:1}
+  .skill-pill span{position:relative;z-index:1}
+
+  /* PROJECTS */
+  #projects .projects-grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:28px;
+  }
+  .proj-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:8px;padding:36px;
+    transition:all .3s;position:relative;overflow:hidden;
+    cursor:none;
+  }
+  .proj-card::after{
+    content:'';position:absolute;
+    top:-100%;left:-100%;width:300%;height:300%;
+    background:radial-gradient(circle,rgba(123,47,255,.08) 0%,transparent 60%);
+    transition:top .5s,left .5s;pointer-events:none;
+  }
+  .proj-card:hover::after{top:-80%;left:-80%}
+  .proj-card:hover{border-color:var(--glow);transform:translateY(-6px);box-shadow:0 20px 60px rgba(123,47,255,.15)}
+  .proj-num{
+    font-family:'Syne',sans-serif;font-size:3.5rem;font-weight:800;
+    color:var(--border);line-height:1;margin-bottom:20px;
+  }
+  .proj-title{
+    font-family:'Syne',sans-serif;font-weight:700;font-size:1.3rem;
+    margin-bottom:14px;color:var(--text);
+  }
+  .proj-desc{font-size:.82rem;line-height:1.8;color:var(--dim);margin-bottom:24px}
+  .proj-tags{display:flex;flex-wrap:wrap;gap:8px}
+  .proj-tag{
+    font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+    padding:5px 12px;border-radius:2px;
+    background:rgba(123,47,255,.12);color:var(--glow);
+    border:1px solid rgba(123,47,255,.2);
+  }
+  .proj-star{
+    position:absolute;top:24px;right:24px;
+    width:32px;height:32px;background:rgba(0,245,255,.08);
+    border:1px solid rgba(0,245,255,.2);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:.7rem;color:var(--cyan);
+  }
+
+  /* CONTACT */
+  #contact{text-align:center;padding-bottom:120px}
+  #contact .section-title{margin-bottom:20px}
+  .contact-sub{color:var(--dim);font-size:.88rem;line-height:1.9;margin-bottom:56px;max-width:480px;margin-left:auto;margin-right:auto}
+  .contact-links{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:80px}
+  .contact-link{
+    display:flex;align-items:center;gap:10px;
+    padding:14px 28px;border:1px solid var(--border);border-radius:3px;
+    font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--dim);text-decoration:none;transition:all .25s;
+  }
+  .contact-link:hover{border-color:var(--cyan);color:var(--cyan);transform:translateY(-3px)}
+  .contact-link svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+
+  /* FOOTER */
+  footer{
+    border-top:1px solid var(--border);padding:32px clamp(24px,8vw,120px);
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:.72rem;color:var(--dim);letter-spacing:.1em;
+  }
+  @media(max-width:600px){footer{flex-direction:column;gap:16px;text-align:center}}
+
+  /* DIVIDERS */
+  .divider{
+    height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);
+    margin:0 clamp(24px,8vw,120px);
+  }
+
+  /* PARTICLE */
+  .floating-particle{
+    position:fixed;border-radius:50%;pointer-events:none;
+    animation:float linear infinite;opacity:.15;z-index:1;
+  }
+  @keyframes float{from{transform:translateY(100vh) rotate(0deg)}to{transform:translateY(-10vh) rotate(720deg)}}
+
+  /* GLITCH */
+  .glitch{position:relative;display:inline-block}
+  .glitch::before,.glitch::after{
+    content:attr(data-text);position:absolute;left:0;top:0;width:100%;
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .glitch::before{
+    background:linear-gradient(135deg,var(--cyan),transparent);
+    clip-path:polygon(0 0,100% 0,100% 35%,0 35%);
+    transform:translateX(-3px);animation:glitch1 4s infinite;
+  }
+  .glitch::after{
+    background:linear-gradient(135deg,var(--glow),transparent);
+    clip-path:polygon(0 65%,100% 65%,100% 100%,0 100%);
+    transform:translateX(3px);animation:glitch2 4s infinite;
+  }
+  @keyframes glitch1{0%,90%,100%{transform:translateX(0)}92%{transform:translateX(-4px) skewX(-2deg)}94%{transform:translateX(2px)}}
+  @keyframes glitch2{0%,90%,100%{transform:translateX(0)}91%{transform:translateX(4px) skewX(2deg)}93%{transform:translateX(-2px)}}
+
+  /* SCROLL REVEAL */
+  .reveal{opacity:0;transform:translateY(40px);transition:opacity .8s ease,transform .8s ease}
+  .reveal.visible{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- LOADING -->
+<div id="loader">
+  <div class="loader-text">Initializing</div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+</div>
+
+<!-- THREE.JS CANVAS -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- NAV -->
+<nav>
+  <a href="#hero" class="nav-logo">YK</a>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#skills">Skills</a>
+    <a href="#projects">Projects</a>
+    <a href="#contact">Contact</a>
+  </div>
+</nav>
+
+<div class="wrapper">
+  <!-- HERO -->
+  <section id="hero">
+    <p class="hero-tag">Physics Student → Web Dev & Software Engineer</p>
+    <h1 class="hero-name">
+      <span class="glitch" data-text="Yash">Yash</span>
+      <span class="glitch" data-text="Kumar">Kumar</span>
+    </h1>
+    <p class="hero-roles">
+      20 y/o · BRABU University · <em>Physics Honours</em> ·
+      Building things on the web 🚀
+    </p>
+    <div class="hero-cta">
+      <a href="#projects" class="btn btn-primary">View Projects</a>
+      <a href="#contact" class="btn btn-outline">Get in Touch</a>
+    </div>
+    <div class="scroll-hint">
+      <span>Scroll</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="section-label">01 / About</div>
+    <div class="section-title reveal">Who I <span class="dim">am.</span></div>
+    <div class="grid">
+      <div class="about-bio reveal">
+        <p>Hey 👋 I'm <strong>Yash Kumar</strong>, a 20-year-old from India currently pursuing <strong>Physics Honours</strong> at BRABU University. I discovered my passion for the web and software engineering alongside my physics studies — and turns out, both are about understanding systems deeply.</p>
+        <p>I love turning ideas into real, usable products. My physics background gives me a unique analytical mindset: I approach code the way I approach equations — methodically, creatively, and with curiosity.</p>
+        <p>When I'm not studying fields and waves, I'm building websites, exploring new frameworks, and dreaming up the next project that can make life easier for people.</p>
+      </div>
+      <div class="stats-grid reveal">
+        <div class="stat-card">
+          <div class="stat-num">20</div>
+          <div class="stat-label">Years Old</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">∞</div>
+          <div class="stat-label">Curiosity Level</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">1+</div>
+          <div class="stat-label">Projects Shipped</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">ϕ</div>
+          <div class="stat-label">Physics x Code</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- SKILLS -->
+  <section id="skills">
+    <div class="section-label">02 / Skills</div>
+    <div class="section-title reveal">What I <span class="dim">work with.</span></div>
+    <div class="skills-list reveal">
+      <div class="skill-pill"><span>HTML5</span></div>
+      <div class="skill-pill"><span>CSS3</span></div>
+      <div class="skill-pill"><span>JavaScript</span></div>
+      <div class="skill-pill"><span>React</span></div>
+      <div class="skill-pill"><span>Node.js</span></div>
+      <div class="skill-pill"><span>Three.js</span></div>
+      <div class="skill-pill"><span>Git & GitHub</span></div>
+      <div class="skill-pill"><span>REST APIs</span></div>
+      <div class="skill-pill"><span>Python</span></div>
+      <div class="skill-pill"><span>Problem Solving</span></div>
+      <div class="skill-pill"><span>Physics Thinking</span></div>
+      <div class="skill-pill"><span>Responsive Design</span></div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- PROJECTS -->
+  <section id="projects">
+    <div class="section-label">03 / Projects</div>
+    <div class="section-title reveal">Things I've <span class="dim">built.</span></div>
+    <div class="projects-grid">
+
+      <div class="proj-card reveal">
+        <div class="proj-num">01</div>
+        <div class="proj-star">★</div>
+        <div class="proj-title">Notes Sharing Platform</div>
+        <div class="proj-desc">
+          A web app that lets students upload, discover, and share study notes seamlessly. Built with a focus on clean UX and real utility for students at every level.
+        </div>
+        <div class="proj-tags">
+          <span class="proj-tag">Web App</span>
+          <span class="proj-tag">Full Stack</span>
+          <span class="proj-tag">Student Tool</span>
+        </div>
+      </div>
+
+      <div class="proj-card reveal">
+        <div class="proj-num">02</div>
+        <div class="proj-title">This Portfolio</div>
+        <div class="proj-desc">
+          An immersive, Three.js-powered personal portfolio inspired by Bruno Simon. Features a live particle universe, custom cursor, and fluid animations — all in pure HTML/JS/CSS.
+        </div>
+        <div class="proj-tags">
+          <span class="proj-tag">Three.js</span>
+          <span class="proj-tag">Creative Dev</span>
+          <span class="proj-tag">Animation</span>
+        </div>
+      </div>
+
+      <div class="proj-card reveal">
+        <div class="proj-num">03</div>
+        <div class="proj-title">Coming Soon...</div>
+        <div class="proj-desc">
+          Always building something new. Next up: a physics simulation visualizer where equations meet interactivity — because why not combine your two passions?
+        </div>
+        <div class="proj-tags">
+          <span class="proj-tag">In Progress</span>
+          <span class="proj-tag">Physics</span>
+          <span class="proj-tag">Canvas API</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="section-label">04 / Contact</div>
+    <div class="section-title reveal">Let's <span class="dim">connect.</span></div>
+    <p class="contact-sub reveal">
+      I'm open to collaborations, internships, and just cool conversations about web dev, physics, or whatever you're building.
+    </p>
+    <div class="contact-links reveal">
+      <a href="mailto:yashraj0212.dev@gmail.com" class="contact-link">
+        <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+        Email Me
+      </a>
+      <a href="https://github.com/Yashrajj0212" target="_blank" class="contact-link">
+        <svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+        GitHub
+      </a>
+      <a href="https://www.linkedin.com/in/yash-kumar-4aa2683b5/" target="_blank" class="contact-link">
+        <svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+        LinkedIn
+      </a>
+    </div>
+  </section>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <span>© 2025 Yash Kumar</span>
+  <span>Physics Hons · BRABU University</span>
+  <span>Built with ♥ & Three.js</span>
+</footer>
+
+<!-- THREE.JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ── CUSTOM CURSOR ──────────────────────────────────────
+const cur = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  cur.style.left=mx-6+'px';cur.style.top=my-6+'px';
+});
+function animRing(){
+  rx+=(mx-rx-19)*.15;
+  ry+=(my-ry-19)*.15;
+  ring.style.left=rx+'px';ring.style.top=ry+'px';
+  requestAnimationFrame(animRing);
+}animRing();
+
+// ── LOADER ────────────────────────────────────────────
+setTimeout(()=>{
+  document.getElementById('loader').classList.add('hidden');
+},2400);
+
+// ── THREE.JS UNIVERSE ─────────────────────────────────
+const canvas=document.getElementById('bg-canvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(window.innerWidth,window.innerHeight);
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,.1,1000);
+camera.position.z=30;
+
+// Star field
+const starGeo=new THREE.BufferGeometry();
+const starCount=3000;
+const starPos=new Float32Array(starCount*3);
+for(let i=0;i<starCount*3;i++)starPos[i]=(Math.random()-.5)*300;
+starGeo.setAttribute('position',new THREE.BufferAttribute(starPos,3));
+const starMat=new THREE.PointsMaterial({color:0xffffff,size:.18,transparent:true,opacity:.7});
+const stars=new THREE.Points(starGeo,starMat);
+scene.add(stars);
+
+// Floating geometry cluster — physics-inspired
+const geometries=[
+  new THREE.IcosahedronGeometry(1.6,0),
+  new THREE.OctahedronGeometry(1.2,0),
+  new THREE.TetrahedronGeometry(1.4,0),
+  new THREE.DodecahedronGeometry(1.3,0),
+  new THREE.TorusGeometry(.9,.3,8,12),
+  new THREE.TorusKnotGeometry(.8,.28,60,8),
+];
+const meshMat=new THREE.MeshBasicMaterial({color:0x7b2fff,wireframe:true,transparent:true,opacity:.25});
+const meshes=[];
+for(let i=0;i<18;i++){
+  const geo=geometries[i%geometries.length];
+  const mat=meshMat.clone();
+  mat.color.setHSL(.72+Math.random()*.15,1,.65);
+  mat.opacity=.12+Math.random()*.2;
+  const m=new THREE.Mesh(geo,mat);
+  m.position.set((Math.random()-.5)*60,(Math.random()-.5)*50,(Math.random()-.5)*30-5);
+  const s=.4+Math.random()*.9;
+  m.scale.setScalar(s);
+  m.userData={
+    speedX:(Math.random()-.5)*.008,
+    speedY:(Math.random()-.5)*.006,
+    speedZ:(Math.random()-.5)*.004,
+    rotX:Math.random()*.012,
+    rotY:Math.random()*.01,
+  };
+  scene.add(m);
+  meshes.push(m);
+}
+
+// Nebula glow particles
+const nebulaGeo=new THREE.BufferGeometry();
+const nCount=400;
+const nPos=new Float32Array(nCount*3);
+for(let i=0;i<nCount*3;i++)nPos[i]=(Math.random()-.5)*80;
+nebulaGeo.setAttribute('position',new THREE.BufferAttribute(nPos,3));
+const nebulaMat=new THREE.PointsMaterial({color:0xa259ff,size:.5,transparent:true,opacity:.35});
+const nebula=new THREE.Points(nebulaGeo,nebulaMat);
+scene.add(nebula);
+
+const nebulaMat2=new THREE.PointsMaterial({color:0x00f5ff,size:.4,transparent:true,opacity:.2});
+const nebulaGeo2=new THREE.BufferGeometry();
+const nPos2=new Float32Array(nCount*3);
+for(let i=0;i<nCount*3;i++)nPos2[i]=(Math.random()-.5)*80;
+nebulaGeo2.setAttribute('position',new THREE.BufferAttribute(nPos2,3));
+const nebula2=new THREE.Points(nebulaGeo2,nebulaMat2);
+scene.add(nebula2);
+
+// Mouse parallax
+let tX=0,tY=0;
+document.addEventListener('mousemove',e=>{
+  tX=(e.clientX/window.innerWidth-.5)*2;
+  tY=-(e.clientY/window.innerHeight-.5)*2;
+});
+
+let t=0;
+function animate(){
+  requestAnimationFrame(animate);
+  t+=.008;
+  stars.rotation.y+=.00015;
+  stars.rotation.x+=.00008;
+  nebula.rotation.y-=.0006;
+  nebula2.rotation.y+=.0004;
+  nebula2.rotation.x-=.0003;
+
+  camera.position.x+=(tX*4-camera.position.x)*.04;
+  camera.position.y+=(tY*3-camera.position.y)*.04;
+  camera.lookAt(scene.position);
+
+  meshes.forEach((m,i)=>{
+    m.rotation.x+=m.userData.rotX;
+    m.rotation.y+=m.userData.rotY;
+    m.position.x+=m.userData.speedX;
+    m.position.y+=m.userData.speedY;
+    m.position.z+=m.userData.speedZ;
+    if(Math.abs(m.position.x)>35)m.userData.speedX*=-1;
+    if(Math.abs(m.position.y)>28)m.userData.speedY*=-1;
+    if(m.position.z>15||m.position.z<-20)m.userData.speedZ*=-1;
+    // Pulse opacity
+    m.material.opacity=.1+.12*Math.sin(t+i*.4);
+  });
+
+  renderer.render(scene,camera);
+}
+animate();
+
+window.addEventListener('resize',()=>{
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+});
+
+// ── SCROLL REVEAL ─────────────────────────────────────
+const reveals=document.querySelectorAll('.reveal');
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+},{threshold:.12});
+reveals.forEach(r=>observer.observe(r));
+
+// ── FLOATING PARTICLES ────────────────────────────────
+for(let i=0;i<22;i++){
+  const p=document.createElement('div');
+  p.className='floating-particle';
+  const sz=2+Math.random()*6;
+  const hue=Math.random()<.5?'123,47,255':'0,245,255';
+  p.style.cssText=`
+    width:${sz}px;height:${sz}px;
+    left:${Math.random()*100}vw;
+    background:rgba(${hue},.6);
+    animation-duration:${10+Math.random()*20}s;
+    animation-delay:-${Math.random()*20}s;
+  `;
+  document.body.appendChild(p);
+}
+</script>
+</body>
+</html>
